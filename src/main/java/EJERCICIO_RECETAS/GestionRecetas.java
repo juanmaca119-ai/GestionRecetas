@@ -22,10 +22,6 @@ public class GestionRecetas {
 
         System.out.println("Existe el fichero: " + fichero.exists());
 
-        if (!fichero.exists()){
-            crearCatalogoInicial();
-        }
-
         int opcionMenu;
 
         do {
@@ -41,6 +37,11 @@ public class GestionRecetas {
 
             switch (opcionMenu) {
                 case 1:
+                    if (!fichero.exists()){
+                        crearCatalogoInicial();
+
+                        System.out.println("Existe el fichero: " + fichero.exists());
+                    }
                     break;
                 case 2:
                     break;
