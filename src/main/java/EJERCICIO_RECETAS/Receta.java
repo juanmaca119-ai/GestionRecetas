@@ -51,8 +51,8 @@ public class Receta implements Serializable {
     @Override
     public String toString() {
         return "id: " + id +
-                "nombre: " + nombre +
-                "categoria: " + categoria +
-                "tiempo de preparacion: "+tiempoPreparacion;
+                " - nombre: " + nombre +
+                " - categoria: " + categoria +
+                " - tiempo de preparacion: "+tiempoPreparacion;
     }
 }

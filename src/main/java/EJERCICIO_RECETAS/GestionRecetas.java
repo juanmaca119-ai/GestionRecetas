@@ -1,10 +1,10 @@
 package EJERCICIO_RECETAS;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.Scanner;
+import java.io.FileInputStream;
+import java.io.ObjectOutputStream;
+import java.io.EOFException;
 
 public class GestionRecetas {
 
@@ -25,8 +25,8 @@ public class GestionRecetas {
         int opcionMenu;
 
         do {
-            System.out.println("Menú de Recetas");
-            System.out.println("1. Crear una receta");
+            System.out.println("\nMenú de Recetas");
+            System.out.println("1. Crear la receta por defecto");
             System.out.println("2. Ver todas las recetas almacenadas");
             System.out.println("3. Buscar una receta (por su id)");
             System.out.println("4. Modificar el tiemo de preparación de una receta");
@@ -40,21 +40,31 @@ public class GestionRecetas {
                     if (!fichero.exists()){
                         crearCatalogoInicial();
 
-                        System.out.println("Existe el fichero: " + fichero.exists());
+                        System.out.println("\nExiste la receta (fichero): " + fichero.exists());
+                    } else if (fichero.exists()){
+                        System.out.println("\nYa existe la receta");
                     }
                     break;
                 case 2:
+                    mostrarRecetas();
                     break;
                 case 3:
+                    System.out.println("Ingrese el ID de la receta que desea buscar (1 - 4)");
+                    int codigoBuscado = sc.nextInt();
+                    buscarRecetas(codigoBuscado);
                     break;
                 case 4:
+                    System.out.println("Ingresa el ID de la receta a la que quieres modificar su tiempo de preparación: ");
+                    int codigoMod = sc.nextInt();
+                    //modificarTiempo(codigoMod);
                     break;
                 case 5:
                     break;
                 case 6:
+                    System.out.println("\nGracias por usar mi gestor de recetas");
                     break;
                 default:
-                    System.out.println("Opción no válida");
+                    System.out.println("\nOpción no válida");
             }
         } while (opcionMenu!= 6);
         sc.close();
@@ -64,13 +74,13 @@ public class GestionRecetas {
     //método para verificar si se ha creado el fichero
     public static void crearCatalogoInicial () throws IOException {
         if(fichero.createNewFile()){
-            System.out.println("fichero creado correctamente ");
+            System.out.println("\nfichero creado correctamente ");
         }
         Receta [] recetas = {
-                new Receta(01, "pasta carbonara", "italiana", 20),
-                new Receta(2, "arroz con pollo", "arroces", 40),
-                new Receta(3, "fajitas de pollo", "mexicana", 25),
-                new Receta(4, "arepas rellenas", "colombiana", 20)
+                new Receta(1, " pasta carbonara ", " italiana ", 20),
+                new Receta(2, " arroz con pollo ", " arroces ", 40),
+                new Receta(3, " fajitas de pollo ", " mexicana ", 25),
+                new Receta(4, " arepas rellenas ", " colombiana ", 20)
         };
 
         try (
@@ -85,7 +95,57 @@ public class GestionRecetas {
         }
     }
 
+    //método para mostar las recetas
+    public static void mostrarRecetas () throws IOException {
+
+        try (ObjectInputStream mostrar = new ObjectInputStream(new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+            while (true) {
+                Receta receta = (Receta)mostrar.readObject();
+                System.out.println(receta);
+            }
+        } catch (EOFException e) {
+            System.out.println("Fin del fichero");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error al leer el fichero" + e);
+        }
+    }
 
 
+    //método para buscar recetas por id
+    public static void buscarRecetas (int codigo) throws IOException {
+        boolean encontrada = false;
+        try (ObjectInputStream mostrar = new ObjectInputStream(new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+            while (true) {
+                Receta receta = (Receta) mostrar.readObject();
+
+                if (receta.getId() == codigo) {
+                    System.out.println(receta);
+
+                    encontrada = true;
+                    break;
+                }
+            }
+        } catch (EOFException e) {
+            System.out.println("Fin del fichero");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error al leer el fichero" + e);
+        } if (!encontrada) {
+            System.out.println("ID no válido, ingresa otro");
+        }
+    }
+
+    //método para modificar el tiempo de preparación
+    public static void modificarTiempo (int codigoModificar) throws IOException {
+        boolean modificado = false;
+        try (ObjectInputStream modificar = new ObjectInputStream(new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+            while (true) {
+                Receta [] receta = (Receta[])modificar.readObject();
+
+
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
 
