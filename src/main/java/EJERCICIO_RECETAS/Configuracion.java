@@ -15,7 +15,7 @@ public class Configuracion {
 
     @Override
     public String toString() {
-        return "Ultima opciond el menú: "+ ultimaOpcionSeleccionada +
-                "Numero total de recetas almacenadas: "+cantidadRecetas;
+        return "Ultima opción del menú: "+ ultimaOpcionSeleccionada +
+                "Número total de recetas almacenadas: "+cantidadRecetas;
     }
 }

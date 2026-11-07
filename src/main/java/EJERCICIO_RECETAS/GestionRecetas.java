@@ -10,7 +10,7 @@ public class GestionRecetas {
 
     //declaracion de rutas
     private static final String RUTA_FICHERO =
-            "C:\\Users\\JuanManuelCabreraL\\IdeaProjects\\XML_EJERCICIO\\src\\main\\java\\EJERCICIO_RECETAS\\";
+            "C:\\Users\\JUAN MANUEL\\IdeaProjects\\GestionRecetas\\src\\main\\java\\EJERCICIO_RECETAS\\";
     private static final String NOMBRE_FICHERO = "recetas.dat";
     private static final String NOMBRE_FICHERO2 = "recetas.xml";
     private static final String NOMBRE_FICHERO3 = "configuracion.json";
@@ -56,9 +56,14 @@ public class GestionRecetas {
                 case 4:
                     System.out.println("Ingresa el ID de la receta a la que quieres modificar su tiempo de preparación: ");
                     int codigoMod = sc.nextInt();
-                    //modificarTiempo(codigoMod);
+                    System.out.println("Ahora el nuevo tiempo de preparación: ");
+                    int nuevoTiempo = sc.nextInt();
+
+                    modificarTiempo(codigoMod, nuevoTiempo);
                     break;
                 case 5:
+                    System.out.println("ingresa un nuevo ID para la receta nueva");
+                    int newId = sc.nextInt();
                     break;
                 case 6:
                     System.out.println("\nGracias por usar mi gestor de recetas");
@@ -77,10 +82,10 @@ public class GestionRecetas {
             System.out.println("\nfichero creado correctamente ");
         }
         Receta [] recetas = {
-                new Receta(1, " pasta carbonara ", " italiana ", 20),
-                new Receta(2, " arroz con pollo ", " arroces ", 40),
-                new Receta(3, " fajitas de pollo ", " mexicana ", 25),
-                new Receta(4, " arepas rellenas ", " colombiana ", 20)
+                new Receta(1, " Pasta carbonara ", "Italiana ", 20),
+                new Receta(2, " Arroz con pollo ", " Arroces ", 40),
+                new Receta(3, " Fajitas de pollo ", " Mexicana ", 25),
+                new Receta(4, " Arepas rellenas ", " clombiana ", 20)
         };
 
         try (
@@ -134,18 +139,79 @@ public class GestionRecetas {
         }
     }
 
-    //método para modificar el tiempo de preparación
-    public static void modificarTiempo (int codigoModificar) throws IOException {
-        boolean modificado = false;
-        try (ObjectInputStream modificar = new ObjectInputStream(new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+
+
+    /* método auxiliar para contar las recetas,
+    *     es necesario para poder modificar el tiempo de preparación, o modificar las recetas en si*/
+    public static int contarRecetas () {
+        int contadorRec = 0; //método: declaramos esta variable para realizar el conteo
+        try (
+                ObjectInputStream contador = new ObjectInputStream(
+                        new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
             while (true) {
-                Receta [] receta = (Receta[])modificar.readObject();
-
-
+                Receta receta = (Receta)contador.readObject();
+                contadorRec ++;
             }
-        } catch (ClassNotFoundException e) {
+        } catch (EOFException e){
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error al leer el fichero" + e);
+        }
+        return contadorRec;
+    }
+
+    //método para modificar el tiempo de preparación
+    public static void modificarTiempo (int codigoModificar, int nuevoTiempo) throws IOException {
+        int total = contarRecetas(); /* método: en este caso usamos el método auxiliar que usamos
+                                            para contar la cantidad de recetas que tenemos*/
+
+        Receta [] recetas = new Receta [total]; /*método: se le pasa
+                                                        el int que contiene el contador de recetas*/
+
+        boolean modificado = false;
+        //leemos
+        try (ObjectInputStream modificar =
+                     new ObjectInputStream(
+                             new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+            for (int i = 0; i < total; i++) { //método: for para recorrer todas las recetas dentro de la variable "total"
+                recetas[i] = (Receta) modificar.readObject(); //se instancia a la clase Receta
+                if (recetas[i].getId() == codigoModificar) { /* método: se llama al Array,
+                                                                    se le pasa por parámetro el recorrido el Array
+                                                                    [i] para comprobar por medio de getId si coincide con
+                                                                    el codigo que quiere modificar */
+                    recetas[i].setTiempoPreparacion(nuevoTiempo);
+                    modificado = true; //se confirma el cambio de tiempo
+                }
+            }
+        } catch (EOFException e) {
+            throw new RuntimeException(e);
+        } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+
+        if (modificado == true) {
+            try (ObjectOutputStream actualizar = new ObjectOutputStream(
+                    new FileOutputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+                for (Receta receta : recetas) {
+                    actualizar.writeObject (receta);
+                    System.out.println("el tiempo se ha actualizado correctamente");
+                }
+            }
+        } else {
+            System.out.println("no existe ninguna receta con ese ID");
+        }
     }
+    /*public static void anadirReceta (int nuevoId) {
+        int total = contarRecetas();
+
+        Receta [] recetaNueva = new Receta [total + 1]; //se le suma uno para crear un nuevo espacio para la receta nueva
+
+        try (ObjectInputStream añadir = new ObjectInputStream(
+                new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+            for (int i = 0; i < total; i++) {
+                recetaNueva [i] = (Receta) añadir.
+            }
+        }
+    }*/
 }
 
