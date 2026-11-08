@@ -1,10 +1,29 @@
 package EJERCICIO_RECETAS;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import java.io.*;
 import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.ObjectOutputStream;
 import java.io.EOFException;
+
+//imports a xml
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+//imports JSON
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.io.FileReader;
+import java.io.FileWriter;
+
 
 public class GestionRecetas {
 
@@ -21,8 +40,10 @@ public class GestionRecetas {
         Scanner sc = new Scanner(System.in);
 
         System.out.println("Existe el fichero: " + fichero.exists());
+        guardarConfiguracion();
 
         int opcionMenu;
+        int ultimaOpcion = 0;
 
         do {
             System.out.println("\nMenú de Recetas");
@@ -31,9 +52,15 @@ public class GestionRecetas {
             System.out.println("3. Buscar una receta (por su id)");
             System.out.println("4. Modificar el tiemo de preparación de una receta");
             System.out.println("5. Añadir nuevas recetas");
-            System.out.println("6. Salir");
+            System.out.println("6. Exportar catálogo XML");
+            System.out.println("7. Salir");
             System.out.println("Seleccione una opción: ");
             opcionMenu = sc.nextInt();
+
+            if (opcionMenu != 7) {
+                ultimaOpcion = opcionMenu;
+                //para guardar la ultima operacion q realiza el ususario
+            }
 
             switch (opcionMenu) {
                 case 1:
@@ -64,15 +91,21 @@ public class GestionRecetas {
                 case 5:
                     System.out.println("ingresa un nuevo ID para la receta nueva");
                     int newId = sc.nextInt();
+                    anadirReceta(newId, sc);
                     break;
                 case 6:
+                    archivoXML();
+                    break;
+                case 7:
+                    guardarConfiguracion(ultimaOpcion);
                     System.out.println("\nGracias por usar mi gestor de recetas");
                     break;
                 default:
                     System.out.println("\nOpción no válida");
             }
-        } while (opcionMenu!= 6);
+        } while (opcionMenu!= 7);
         sc.close();
+
     }
 
 
@@ -201,7 +234,9 @@ public class GestionRecetas {
             System.out.println("no existe ninguna receta con ese ID");
         }
     }
-    /*public static void anadirReceta (int nuevoId) {
+    public static void anadirReceta (int nuevoId, Scanner sc) {
+        /* método: le pasamos por parámetro el Scanner, esto para pedir los demas datos
+        *     de la receta */
         int total = contarRecetas();
 
         Receta [] recetaNueva = new Receta [total + 1]; //se le suma uno para crear un nuevo espacio para la receta nueva
@@ -209,9 +244,154 @@ public class GestionRecetas {
         try (ObjectInputStream añadir = new ObjectInputStream(
                 new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
             for (int i = 0; i < total; i++) {
-                recetaNueva [i] = (Receta) añadir.
+                recetaNueva [i] = (Receta) añadir.readObject();
+
+                if (recetaNueva[i].getId() == nuevoId) {
+                    System.out.println("Este ID ya está asignado a otra receta");
+                    return; //hace que le método se detenga y nos envie al menu principal
+
+                }
             }
+        } catch (EOFException e) {
+            throw new RuntimeException(e);
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } //método: finaliza comprobación de ID's
+        System.out.println("");
+        sc.nextLine();
+
+        System.out.println("Nombre de la receta nueva: ");
+        String nombre = sc.nextLine();
+
+        System.out.println("Categoria: ");
+        String categoria = sc.nextLine();
+
+        System.out.println("Tiempo de preparacion: ");
+        int tiempo = sc.nextInt();
+
+        /* método: en este caso, creamos una nueva receta con los datos nuevos
+        *     pero usamos el Array que creamos con un espacio de más */
+
+        recetaNueva [total] = new Receta(nuevoId, nombre, categoria, tiempo);
+        //usamos el ID que le asignamos por parametro en el método, y luego las demás vaiables
+
+        //sección de escritura
+        try(ObjectOutputStream escribirNuevo = new ObjectOutputStream(
+                new FileOutputStream(RUTA_FICHERO+NOMBRE_FICHERO))) {
+            for (Receta receta : recetaNueva) {
+                escribirNuevo.writeObject(receta);
+            }
+            System.out.println("La receta se ha añadido exitosamente");
+        } catch (IOException e) {
+            System.out.println("Error al escribir una nueva receta\n");
         }
-    }*/
+    }
+
+
+
+    //creación de xml
+    public static void archivoXML () {
+        int total = contarRecetas();
+
+        Receta [] recetas = new Receta [total];
+        //seccion de lectura de recetas.dat y exportacion a recetas.xml
+        try (ObjectInputStream leer = new ObjectInputStream(
+                new FileInputStream(RUTA_FICHERO + NOMBRE_FICHERO))) {
+            for (int i = 0; i < total; i++) {
+                recetas[i] = (Receta) leer.readObject();
+            }
+        } catch (EOFException e) {
+
+        } catch(IOException | ClassNotFoundException e) {
+            System.out.println("Error al leer el fichero" + e);
+        }
+
+        //seccion para crear el DOM en memoria
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newDefaultInstance();
+
+            //analizador del DOM
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            //creacion del xml vacio
+            Document document = builder.newDocument();
+
+            //creacion del elemento raiz
+            //en este caso, por cada receta del array, se crea la etiqueta <recetas>
+            Element etiquetaRecetas = document.createElement("recetas");
+            document.appendChild(etiquetaRecetas);
+
+            /*creamos:
+            un bucle para que recorra todo
+                                          el array referente a las recetas
+                                          y creamos las etiquetas*/
+
+            for (int i = 0; i < recetas.length; i++) {
+                //<receta>
+                Element receta = document.createElement("receta");
+                receta.setAttribute("id", String.valueOf(recetas[i].getId()));
+                etiquetaRecetas.appendChild(receta);
+                //<nombre>
+                Element nombreReceta = document.createElement("nombre");
+                nombreReceta.setTextContent(recetas[i].getNombre());
+                etiquetaRecetas.appendChild(nombreReceta);
+                //<categoria>
+                Element categoriaReceta = document.createElement("categoria");
+                categoriaReceta.setTextContent(recetas[i].getCategoria());
+                etiquetaRecetas.appendChild(categoriaReceta);
+                //<tiempoPreparacion>
+                Element tiempoPreparacionReceta = document.createElement("tiempoPreparacion");
+                tiempoPreparacionReceta.setTextContent(String.valueOf(recetas[i].getTiempoPreparacion()));
+                etiquetaRecetas.appendChild(tiempoPreparacionReceta);
+            }
+            //hacer el transformador
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+
+            transformer.transform(
+                    new DOMSource(document),
+                    new StreamResult(new File(RUTA_FICHERO + NOMBRE_FICHERO2)));
+            System.out.println("xml creado correctamente");
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void guardarConfiguracion (int ultimaOpcion){
+        int total = contarRecetas();
+
+        //instanciamos el objeto config en la clase Configuracion, se le pasa por parametro el ultimaOpcion y el total de recetas
+        Configuracion config = new Configuracion(ultimaOpcion, total);
+
+        //crea el Gson con un formato bonito
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        try (FileWriter escritor = new FileWriter(RUTA_FICHERO+NOMBRE_FICHERO3)) {
+            gson.toJson(config, escritor);
+            System.out.println("Se guardó la configuración");
+        } catch (IOException e) {
+            System.out.println("error al guardar el json");
+        }
+    }
+
+    //método para leer al inicar
+    public static void guardarConfiguracion (){
+        //comprobamos si existe el JSON creando un objeto
+        File archivoJson = new File (RUTA_FICHERO + NOMBRE_FICHERO3);
+        if (archivoJson.exists()) {
+            Gson gson = new Gson(); //si existe, crea el JSON
+
+            try (FileReader lector = new FileReader(RUTA_FICHERO+NOMBRE_FICHERO3)) {
+                Configuracion config = gson.fromJson(lector, Configuracion.class); //convierte el contenido del archivo de vuelta a un objeto
+
+                System.out.println(config);
+
+            } catch (IOException e) {
+                System.out.println("error");
+            }
+
+        }
+
+    }
+
 }
 
